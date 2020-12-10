@@ -3,6 +3,7 @@
  * Time     21:31
  * Author   Trian Damai
  * */
+
 class response {
   constructor() {}
   static success(res: any, message: any, data: any) {

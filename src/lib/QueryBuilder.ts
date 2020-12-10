@@ -8,8 +8,11 @@ interface ObjectDescriptor {
   [key: string]: any;
 }
 interface trailingwhere {
+  condition: where;
+  withcondition: where;
+}
+interface where {
   column: any;
-  trailing: trailing;
   value: any;
 }
 interface RequestQuery {
@@ -19,8 +22,11 @@ interface RequestQuery {
 enum builder {
   INSERT = "INSERT INTO",
   UPDATE = "UPDATE",
+  GETALL = "SELECT * FROM",
+  GET = "SELECT",
   SET = "SET ?",
-  WHERE = "WHERE"
+  WHERE = "WHERE",
+  EQUAL = "="
 }
 enum trailing {
   AND = "AND",
@@ -29,6 +35,27 @@ enum trailing {
 class QueryBuilder {
   constructor() {}
 
+  /**
+   * get query getall
+   * @param tableName
+   * @returns query get SELECT * FROM tablename
+   * */
+  qgetall(data: { tableName: string }) {
+    return builder.GET + ` ${data.tableName} `;
+  }
+  /**
+   * get query insert
+   * @param Array<tableName or as>
+   * @returns query get tablename or as alias,
+   * */
+  qget(data: { tableName: string; data: Array<string> }) {
+    let result: string = builder.GET;
+    data.data.map((item, index) => {
+      let trailinComma = data.data.length - 1 == index ? " " : ",";
+      result += `${item} ${trailinComma}`;
+    });
+    return result;
+  }
   /**
    * get query insert
    * @param RequestQuery
@@ -40,8 +67,8 @@ class QueryBuilder {
     objectName.map((item, index) => {
       let trailinComma = objectName.length - 1 == index ? " " : ",";
       typeof data.data[item] == "string"
-        ? (result += `${item} = "${data.data[item]}" ${trailinComma} `)
-        : (result += `${item} = ${data.data[item]} ${trailinComma} `);
+        ? (result += `${item} ${builder.EQUAL} "${data.data[item]}" ${trailinComma} `)
+        : (result += `${item} ${builder.EQUAL} ${data.data[item]} ${trailinComma} `);
     });
     return result;
   }
@@ -57,13 +84,37 @@ class QueryBuilder {
     objectName.map((item, index) => {
       let trailinComma = objectName.length - 1 == index ? " " : ",";
       typeof data.data[item] == "string"
-        ? (result += `${item} = "${data.data[item]}" ${trailinComma} `)
-        : (result += `${item} = ${data.data[item]} ${trailinComma} `);
+        ? (result += `${item} ${builder.EQUAL} "${data.data[item]}" ${trailinComma} `)
+        : (result += `${item} ${builder.EQUAL} ${data.data[item]} ${trailinComma} `);
     });
     return (result += builder.WHERE + ``);
   }
-  where(data: trailingwhere): string {
-    return `${data.column} ${data.trailing} ${data.value}`;
+  /**
+   * get where condition
+   * @param columnname
+   * @param value
+   * @returns query where  columnname = value
+   * */
+  where(data: where): string {
+    return `${data.column} = ${data.value}`;
+  }
+  /**
+   * get where condition
+   * @param where = column = value
+   * @param where = column = value
+   * @returns query WHERE  columnname = value OR columnname = value
+   * */
+  orwhere(data: trailingwhere): string {
+    return `${data.condition.column} ${builder.EQUAL} ${data.condition.value} ${trailing.OR} ${data.withcondition.column} ${builder.EQUAL} ${data.withcondition.value}`;
+  }
+  /**
+   * get where condition
+   * @param where = column = value
+   * @param where = column = value
+   * @returns query WHERE  columnname = value AND columnname = value
+   * */
+  andwhere(data: trailingwhere): string {
+    return `${data.condition.column} ${builder.EQUAL} ${data.condition.value} ${trailing.AND} ${data.withcondition.column} ${builder.EQUAL} ${data.withcondition.value}`;
   }
 }
-export { QueryBuilder };
+export { QueryBuilder, ObjectDescriptor };
