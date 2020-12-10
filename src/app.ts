@@ -1,13 +1,15 @@
+/**
+ * Date     05 December 2020
+ * Time     21:31
+ * Author   Trian Damai
+ * */
+
 import * as express from "express";
 import router from "./routes/routes";
 import * as bodyparser from "body-parser";
 import * as path from "path";
 
 import user from "./controller/UserController";
-import auth from "./controller/AuthController";
-import main from "./controller/VideoController";
-import notif from "./controller/Notification";
-import conv from "./controller/Converter";
 
 class App {
   public express: express.Application;
@@ -27,10 +29,6 @@ class App {
   private loadRoutes(): void {
     this.express.use("/", router);
     this.express.use("/", user);
-    this.express.use("/", auth);
-    this.express.use("/", main);
-    this.express.use("/", notif);
-    this.express.use("/", conv);
   }
 }
 

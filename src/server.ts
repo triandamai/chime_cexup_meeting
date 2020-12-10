@@ -1,13 +1,18 @@
-import app from './app'
-import * as dotenv from 'dotenv'
-dotenv.config()
-const port = process.env.PORT || 4000
+/**
+ * Date     05 December 2020
+ * Time     21:31
+ * Author   Trian Damai
+ * */
 
-app.listen(port,()=>{
- console.log(`Running ${port}`)
-})
+import app from "./app";
+import * as dotenv from "dotenv";
+dotenv.config();
+const port = process.env.PORT || 4000;
 
-app.on('error',(err)=>{
-    console.log(err)
-})
+app.listen(port, () => {
+  console.log(`Running ${port}`);
+});
 
+app.on("error", err => {
+  console.log(err);
+});

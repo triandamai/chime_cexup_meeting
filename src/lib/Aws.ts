@@ -1,3 +1,9 @@
+/**
+ * Date     05 December 2020
+ * Time     21:31
+ * Author   Trian Damai
+ * */
+
 import { Chime, config, Endpoint } from "aws-sdk";
 require("dotenv").config();
 
@@ -56,6 +62,16 @@ class Aws {
         MeetingId: data.meetingId,
         ExternalUserId: data.externalUserId
       })
+      .promise();
+  }
+  /**
+   * delete meeting by host
+   * @param asocietedMeeting
+   * @returns deleting room meeting for all
+   * */
+  async deleteMeeting(data: asociatedMeeting) {
+    return await this.chime
+      .deleteMeeting({ MeetingId: data.asociatedId })
       .promise();
   }
 }
