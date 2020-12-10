@@ -7,10 +7,7 @@
 interface ObjectDescriptor {
   [key: string]: any;
 }
-interface trailingwhere {
-  condition: where;
-  withcondition: where;
-}
+
 interface where {
   column: any;
   value: any;
@@ -19,19 +16,32 @@ interface RequestQuery {
   table: string;
   data: ObjectDescriptor;
 }
+interface ResultBuilder {
+  result: ResultType;
+  payload: any;
+  error: any;
+  fields: any;
+}
 enum builder {
   INSERT = "INSERT INTO",
   UPDATE = "UPDATE",
-  GETALL = "SELECT * FROM",
+  GETALL = "SELECT *",
   GET = "SELECT",
   SET = "SET ?",
   WHERE = "WHERE",
-  EQUAL = "="
+  EQUAL = "=",
+  FROM = "FROM"
 }
 enum trailing {
   AND = "AND",
   OR = "OR"
 }
+enum ResultType {
+  SUCCESS = "success",
+  FAILED = "failed",
+  ERROR = "error"
+}
+
 class QueryBuilder {
   constructor() {}
 
@@ -41,7 +51,7 @@ class QueryBuilder {
    * @returns query get SELECT * FROM tablename
    * */
   qgetall(data: { tableName: string }) {
-    return builder.GET + ` ${data.tableName} `;
+    return `${builder.GETALL} ${builder.FROM} ${data.tableName} `;
   }
   /**
    * get query insert
@@ -49,12 +59,12 @@ class QueryBuilder {
    * @returns query get tablename or as alias,
    * */
   qget(data: { tableName: string; data: Array<string> }) {
-    let result: string = builder.GET;
+    let result: string = ` ${builder.GET} `;
     data.data.map((item, index) => {
       let trailinComma = data.data.length - 1 == index ? " " : ",";
       result += `${item} ${trailinComma}`;
     });
-    return result;
+    return (result += `${builder.FROM} ${data.tableName} `);
   }
   /**
    * get query insert
@@ -96,7 +106,8 @@ class QueryBuilder {
    * @returns query where  columnname = value
    * */
   where(data: where): string {
-    return `${data.column} = ${data.value}`;
+    let val = typeof data.value == "string" ? `${data.value}` : data.value;
+    return `${builder.WHERE} ${data.column} ${builder.EQUAL} ${val}`;
   }
   /**
    * get where condition
@@ -104,8 +115,9 @@ class QueryBuilder {
    * @param where = column = value
    * @returns query WHERE  columnname = value OR columnname = value
    * */
-  orwhere(data: trailingwhere): string {
-    return `${data.condition.column} ${builder.EQUAL} ${data.condition.value} ${trailing.OR} ${data.withcondition.column} ${builder.EQUAL} ${data.withcondition.value}`;
+  orwhere(data: where): string {
+    let val = typeof data.value == "string" ? `${data.value}` : data.value;
+    return ` ${trailing.OR} ${data.column} ${builder.EQUAL}'${val}'`;
   }
   /**
    * get where condition
@@ -113,8 +125,9 @@ class QueryBuilder {
    * @param where = column = value
    * @returns query WHERE  columnname = value AND columnname = value
    * */
-  andwhere(data: trailingwhere): string {
-    return `${data.condition.column} ${builder.EQUAL} ${data.condition.value} ${trailing.AND} ${data.withcondition.column} ${builder.EQUAL} ${data.withcondition.value}`;
+  andwhere(data: where): string {
+    let val = typeof data.value == "string" ? `${data.value}` : data.value;
+    return ` ${trailing.AND} ${data.column} ${builder.EQUAL} ${val}`;
   }
 }
-export { QueryBuilder, ObjectDescriptor };
+export { QueryBuilder, ObjectDescriptor, ResultType, ResultBuilder, where };

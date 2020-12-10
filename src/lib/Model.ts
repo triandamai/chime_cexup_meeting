@@ -1,4 +1,3 @@
-import { resolve } from "url";
 /**
  * Date     05 December 2020
  * Time     21:31
@@ -6,7 +5,7 @@ import { resolve } from "url";
  * */
 
 import db from "../connection/db";
-import { QueryBuilder, ObjectDescriptor } from "./QueryBuilder";
+import { QueryBuilder, ResultBuilder, ResultType, where } from "./QueryBuilder";
 
 /**
  * class base models
@@ -27,8 +26,9 @@ export default abstract class Model {
    * @param tableName
    * @returns results of all data from database
    * */
-  protected getAll() {
+  public getAll(): Model {
     this.query += this.builder.qgetall({ tableName: this.tableName });
+    return this;
   }
   /**
    * get all data
@@ -38,8 +38,9 @@ export default abstract class Model {
    * ex:
    *
    * */
-  protected get(data: Array<string>) {
+  public get(data: Array<string>): Model {
     this.query += this.builder.qget({ tableName: this.tableName, data: data });
+    return this;
   }
   /**
    * insert data
@@ -49,8 +50,9 @@ export default abstract class Model {
    * ex:
    *
    * */
-  protected insert(data: any) {
+  public insert(data: any): Model {
     this.query += this.builder.qinsert({ table: this.tableName, data: data });
+    return this;
   }
   /**
    * update data
@@ -60,10 +62,39 @@ export default abstract class Model {
    * ex:
    *
    * */
-  protected update(data: any) {
+  public update(data: any): Model {
     this.query += this.builder.qupdate({ table: this.tableName, data: data });
+    return this;
   }
-
+  /**
+   *
+   *
+   * */
+  public where(data: { column: string; value: any }): Model {
+    this.query += this.builder.where({
+      column: data.column,
+      value: data.value
+    });
+    return this;
+  }
+  /**
+   * */
+  public orwhere(data: where): Model {
+    this.query += this.builder.orwhere({
+      column: data.column,
+      value: data.value
+    });
+    return this;
+  }
+  /**
+   * */
+  public andwhere(data: where): Model {
+    this.query += this.builder.orwhere({
+      column: data.column,
+      value: data.value
+    });
+    return this;
+  }
   /**
    * executing modification query
    *
@@ -72,13 +103,27 @@ export default abstract class Model {
    * ex:
    *
    * */
-  protected write(): Promise<void> {
+  public async write() {
     return new Promise((resolve, reject) => {
       db.query(this.query, (err, results, fields) => {
         if (err) {
-          reject(err);
+          reject(
+            this.result({
+              res: ResultType.ERROR,
+              data: null,
+              err: err,
+              field: null //fields
+            })
+          );
         } else {
-          resolve();
+          resolve(
+            this.result({
+              res: ResultType.SUCCESS,
+              data: results,
+              err: err,
+              field: null //fields
+            })
+          );
         }
       });
       this.query = "";
@@ -92,16 +137,43 @@ export default abstract class Model {
    * ex:
    *
    * */
-  protected find(): Promise<void> {
+  public async find() {
     return new Promise((resolve, reject) => {
       db.query(this.query, (err, results, fields) => {
         if (err) {
-          reject(err);
+          reject(
+            this.result({
+              res: ResultType.ERROR,
+              data: null,
+              err: err,
+              field: null //fields
+            })
+          );
         } else {
-          resolve();
+          resolve(
+            this.result({
+              res: ResultType.SUCCESS,
+              data: results,
+              err: err,
+              field: null //fields
+            })
+          );
         }
       });
     });
     this.query = "";
+  }
+  private result(data: {
+    res: ResultType;
+    data: any;
+    err: any;
+    field: any;
+  }): ResultBuilder {
+    return {
+      result: data.res,
+      payload: data,
+      error: data.err,
+      fields: data.field
+    };
   }
 }

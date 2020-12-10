@@ -1,3 +1,5 @@
+import Model from "../lib/Model";
+
 /**
  * Date     05 December 2020
  * Time     21:31
@@ -10,6 +12,7 @@ export interface History {
   joinAt: string;
   leaveAt: string;
 }
+
 export interface Meeting {
   id: number;
   meetingId: string;
@@ -17,4 +20,7 @@ export interface Meeting {
   hostId: string;
   createdAt: string;
   updatedAt: string;
+}
+export class MeetingModel extends Model {
+  tableName = "meeting";
 }
