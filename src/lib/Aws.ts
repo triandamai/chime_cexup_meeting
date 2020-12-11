@@ -8,12 +8,12 @@ import { Chime, config, Endpoint } from "aws-sdk";
 require("dotenv").config();
 
 interface asociatedMeeting {
-  asociatedId: string;
+  asociatedId: any;
   hostId: string;
 }
 
 interface asociatedAttende {
-  meetingId: string;
+  meetingId: any;
   externalUserId: string;
 }
 class Aws {

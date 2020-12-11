@@ -8,7 +8,7 @@ interface ObjectDescriptor {
   [key: string]: any;
 }
 
-interface where {
+interface Where {
   column: any;
   value: any;
 }
@@ -27,10 +27,14 @@ enum builder {
   UPDATE = "UPDATE",
   GETALL = "SELECT *",
   GET = "SELECT",
-  SET = "SET ?",
+  SET = "SET ",
+  Q = "?",
   WHERE = "WHERE",
   EQUAL = "=",
-  FROM = "FROM"
+  FROM = "FROM",
+  JOIN = "JOIN",
+  ON = "ON",
+  OUTER = "OUTER"
 }
 enum trailing {
   AND = "AND",
@@ -41,7 +45,17 @@ enum ResultType {
   FAILED = "failed",
   ERROR = "error"
 }
-
+enum JoinType {
+  INNER = "INNER",
+  LEFT = "LEFT",
+  RIGHT = "RIGHT",
+  FULL = "FULL"
+}
+enum WhereType {
+  WHERE = "WHERE",
+  ORWHERE = "OR WHERE",
+  ANDWHETE = "AND WHERE"
+}
 class QueryBuilder {
   constructor() {}
 
@@ -72,13 +86,14 @@ class QueryBuilder {
    * @returns query insert = INSERT into tablename SET ?
    * */
   qinsert(data: RequestQuery): string {
-    let result: string = builder.INSERT + ` ${data.table} ` + builder.SET;
+    let result: string = builder.INSERT + ` ${data.table} ` + builder.SET + ` `;
     let objectName = Object.keys(data.data);
     objectName.map((item, index) => {
       let trailinComma = objectName.length - 1 == index ? " " : ",";
       typeof data.data[item] == "string"
-        ? (result += `${item} ${builder.EQUAL} "${data.data[item]}" ${trailinComma} `)
-        : (result += `${item} ${builder.EQUAL} ${data.data[item]} ${trailinComma} `);
+        ? (result +=
+            item + builder.EQUAL + "'" + data.data[item] + "'" + trailinComma)
+        : (result += item + builder.EQUAL + data.data[item] + trailinComma);
     });
     return result;
   }
@@ -94,40 +109,51 @@ class QueryBuilder {
     objectName.map((item, index) => {
       let trailinComma = objectName.length - 1 == index ? " " : ",";
       typeof data.data[item] == "string"
-        ? (result += `${item} ${builder.EQUAL} "${data.data[item]}" ${trailinComma} `)
-        : (result += `${item} ${builder.EQUAL} ${data.data[item]} ${trailinComma} `);
+        ? (result += item + builder.EQUAL + data.data[item] + trailinComma)
+        : (result += item + builder.EQUAL + data.data[item] + trailinComma);
     });
-    return (result += builder.WHERE + ``);
+    return result;
   }
   /**
    * get where condition
-   * @param columnname
-   * @param value
-   * @returns query where  columnname = value
+   * @param data {column,value}
+   * @param type
+   * @returns query WHERE  columnname = value OR columnname = value AND columnname = value
    * */
-  where(data: where): string {
-    let val = typeof data.value == "string" ? `${data.value}` : data.value;
-    return `${builder.WHERE} ${data.column} ${builder.EQUAL} ${val}`;
+  where(data: { data: Where; type: WhereType }): string {
+    let val =
+      typeof data.data.value == "string"
+        ? `${data.data.value}`
+        : data.data.value;
+    let type =
+      data.type == WhereType.WHERE
+        ? ""
+        : data.type == WhereType.ORWHERE
+        ? trailing.OR
+        : trailing.AND;
+
+    return `${type} ${builder.WHERE} ${data.data.column} ${builder.EQUAL} ${val}`;
   }
+
   /**
-   * get where condition
-   * @param where = column = value
-   * @param where = column = value
-   * @returns query WHERE  columnname = value OR columnname = value
+   * join table
+   * @param table
+   * @param on
+   * @param type
+   * @returns query {LEFT,FULL OUTER,RIGHT} JOIN table name ON table.fk
    * */
-  orwhere(data: where): string {
-    let val = typeof data.value == "string" ? `${data.value}` : data.value;
-    return ` ${trailing.OR} ${data.column} ${builder.EQUAL}'${val}'`;
-  }
-  /**
-   * get where condition
-   * @param where = column = value
-   * @param where = column = value
-   * @returns query WHERE  columnname = value AND columnname = value
-   * */
-  andwhere(data: where): string {
-    let val = typeof data.value == "string" ? `${data.value}` : data.value;
-    return ` ${trailing.AND} ${data.column} ${builder.EQUAL} ${val}`;
+  join(data: { table: string; on: string; type: JoinType }): string {
+    return `${data.type} ${data.type == JoinType.FULL ? builder.OUTER : ""} ${
+      builder.JOIN
+    } ${data.table} ${builder.ON} ${data.on}`;
   }
 }
-export { QueryBuilder, ObjectDescriptor, ResultType, ResultBuilder, where };
+export {
+  QueryBuilder,
+  ObjectDescriptor,
+  ResultType,
+  ResultBuilder,
+  Where,
+  WhereType,
+  JoinType
+};

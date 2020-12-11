@@ -15,10 +15,16 @@ class UserController extends Controller {
   public index(req: Request, res: Response) {
     let model = new MeetingModel();
     model
-      .get(["id", "meetingid as m"])
-      .where({ column: "id", value: 2 })
-      .andwhere({ column: "description", value: "des" })
-      .find()
+      .update({
+        meetingId: "hehehoo",
+        asosiatedId: "sasa",
+        description: "sahgvsa",
+        hostId: "sahgsa",
+        createdAt: "sahg",
+        updatedAt: "sfag"
+      })
+      .where({ column: "id", value: 30 })
+      .write()
       .then(val => {
         res.send(val);
       })

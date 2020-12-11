@@ -16,6 +16,7 @@ export interface History {
 export interface Meeting {
   id: number;
   meetingId: string;
+  asociatedId: string;
   description: string;
   hostId: string;
   createdAt: string;
