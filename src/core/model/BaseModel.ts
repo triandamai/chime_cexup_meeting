@@ -4,16 +4,20 @@
  * Author   Trian Damai
  * */
 
-import { resolve } from "url";
-import db from "../connection/db";
+import { connection, database, IDatabase } from "..";
 import {
-  QueryBuilder,
   ResultBuilder,
   ResultType,
   Where,
   WhereType,
-  JoinType
-} from "./QueryBuilder";
+  JoinType,
+  qget,
+  qgetall,
+  qinsert,
+  qupdate,
+  qjoin,
+  qwhere
+} from "..";
 
 /**
  * class base models
@@ -22,20 +26,20 @@ import {
  * @param QueryBuilder
  * @returns model with querybuilder for extends
  * */
-export default abstract class Model {
+export abstract class BaseModel implements IDatabase {
   abstract tableName: string = "";
   protected query = "";
-  private builder: QueryBuilder;
+
   constructor() {
-    this.builder = new QueryBuilder();
+    database.connect();
   }
   /**
    * get all data
    * @param tableName
    * @returns results of all data from database
    * */
-  public getAll(): Model {
-    this.query += this.builder.qgetall({ tableName: this.tableName });
+  public getAll(): BaseModel {
+    this.query += qgetall({ tableName: this.tableName });
     return this;
   }
   /**
@@ -46,8 +50,8 @@ export default abstract class Model {
    * ex:
    *
    * */
-  public get(data: Array<string>): Model {
-    this.query += this.builder.qget({ tableName: this.tableName, data: data });
+  public get(data: Array<string>): BaseModel {
+    this.query += qget({ tableName: this.tableName, data: data });
     return this;
   }
   /**
@@ -58,8 +62,8 @@ export default abstract class Model {
    * ex:
    *
    * */
-  public insert(data: any): Model {
-    this.query += this.builder.qinsert({ table: this.tableName, data: data });
+  public insert(data: any): BaseModel {
+    this.query += qinsert({ table: this.tableName, data: data });
     return this;
   }
   /**
@@ -70,16 +74,18 @@ export default abstract class Model {
    * ex:
    *
    * */
-  public update(data: any): Model {
-    this.query += this.builder.qupdate({ table: this.tableName, data: data });
+  public update(data: any): BaseModel {
+    this.query += qupdate({ table: this.tableName, data: data });
     return this;
   }
   /**
-   *
-   *
+   * where query
+   * @param column
+   * @param value
+   * @returns WHERE column = value
    * */
-  public where(data: { column: string; value: any }): Model {
-    this.query += this.builder.where({
+  public where(data: { column: string; value: any }): BaseModel {
+    this.query += qwhere({
       data: {
         column: data.column,
         value: data.value
@@ -89,9 +95,13 @@ export default abstract class Model {
     return this;
   }
   /**
+   * where query
+   * @param column
+   * @param value
+   * @returns OR WHERE column = value
    * */
-  public orwhere(data: Where): Model {
-    this.query += this.builder.where({
+  public orwhere(data: Where): BaseModel {
+    this.query += qwhere({
       data: {
         column: data.column,
         value: data.value
@@ -101,9 +111,13 @@ export default abstract class Model {
     return this;
   }
   /**
+   * where query
+   * @param column
+   * @param value
+   * @returns AND WHERE column = value
    * */
-  public andwhere(data: Where): Model {
-    this.query += this.builder.where({
+  public andwhere(data: Where): BaseModel {
+    this.query += qwhere({
       data: {
         column: data.column,
         value: data.value
@@ -112,34 +126,56 @@ export default abstract class Model {
     });
     return this;
   }
-  //
-  public join(join: { withTable: string; on: string }): Model {
-    this.query += this.builder.join({
+  /**
+   * where query
+   * @param table
+   * @param on
+   * @returns JOIN table ON table.fk
+   * */
+  public join(join: { withTable: string; on: string }): BaseModel {
+    this.query += qjoin({
       table: join.withTable,
       on: join.on,
       type: JoinType.LEFT
     });
     return this;
   }
-  //
-  public leftJoin(join: { withTable: string; on: string }): Model {
-    this.query += this.builder.join({
+  /**
+   * where query
+   * @param table
+   * @param on
+   * @returns LEFT JOIN table ON table.fk
+   * */
+  public leftJoin(join: { withTable: string; on: string }): BaseModel {
+    this.query += qjoin({
       table: join.withTable,
       on: join.on,
       type: JoinType.LEFT
     });
     return this;
   }
-  public rightJoin(join: { withTable: string; on: string }): Model {
-    this.query += this.builder.join({
+  /**
+   * where query
+   * @param table
+   * @param on
+   * @returns RIGHT JOIN table ON table.fk
+   * */
+  public rightJoin(join: { withTable: string; on: string }): BaseModel {
+    this.query += qjoin({
       table: join.withTable,
       on: join.on,
       type: JoinType.LEFT
     });
     return this;
   }
-  public fullJoin(join: { withTable: string; on: string }): Model {
-    this.query += this.builder.join({
+  /**
+   * where query
+   * @param table
+   * @param on
+   * @returns  FULL OUTER JOIN table ON table.fk
+   * */
+  public fullJoin(join: { withTable: string; on: string }): BaseModel {
+    this.query += qjoin({
       table: join.withTable,
       on: join.on,
       type: JoinType.LEFT
@@ -156,7 +192,7 @@ export default abstract class Model {
    * */
   public async write() {
     return new Promise((resolve, reject) => {
-      db.query(this.query, (err, results, fields) => {
+      connection.query(this.query, (err, results, fields) => {
         if (err) {
           reject(
             this.result({
@@ -191,7 +227,7 @@ export default abstract class Model {
    * */
   public async find() {
     return new Promise((resolve, reject) => {
-      db.query(this.query, (err, results, fields) => {
+      connection.query(this.query, (err, results, fields) => {
         if (err) {
           reject(
             this.result({
@@ -212,8 +248,8 @@ export default abstract class Model {
           );
         }
       });
+      this.query = "";
     });
-    this.query = "";
   }
   /**
    * Result from execute query
@@ -238,12 +274,12 @@ export default abstract class Model {
    * @param length
    * @returns randomuid
    */
-  public makeid(length: number) {
+  public generateId(data: { length: number }) {
     var result = "";
     var characters =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     var charactersLength = characters.length;
-    for (var i = 0; i < length; i++) {
+    for (var i = 0; i < data.length; i++) {
       result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
@@ -256,24 +292,33 @@ export default abstract class Model {
    * */
   public async cekId() {
     return new Promise((resolve, reject) => {
-      let data = this.makeid(6);
+      let data = this.generateId({ length: 6 });
       this.getAll()
         .where({ column: "asociatedId", value: data })
         .find()
         .then((res: any) => {
           if (res.result == ResultType.SUCCESS) {
             if (res.result.payload.length > 0) {
-              this.cekId();
+              reject(null);
             } else {
               resolve(data);
             }
           } else {
-            this.cekId();
+            reject(null);
           }
         })
         .catch(err => {
-          this.cekId();
+          reject(null);
         });
     });
+  }
+  /**
+   * get log from database
+   * @param message
+   * @returns log
+   *
+   */
+  log(msg: any) {
+    console.log("DATABASE ON = ", msg);
   }
 }
