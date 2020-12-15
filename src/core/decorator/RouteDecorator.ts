@@ -1,3 +1,8 @@
+/**
+ * Date     15 December 2020
+ * Time     13:29
+ * Author   Trian Damai
+ * */
 import { Router } from "express";
 
 export const appRouter = Router();
@@ -11,6 +16,7 @@ enum method {
 interface IOptions {
   path: string;
   middlewares?: any[];
+  validations?: any[];
 }
 
 function Post(options: IOptions) {

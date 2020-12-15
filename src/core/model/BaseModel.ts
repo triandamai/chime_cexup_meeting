@@ -5,6 +5,7 @@
  * */
 
 import { connection, database, IDatabase } from "..";
+import { Request } from "express";
 import {
   ResultBuilder,
   ResultType,
@@ -26,8 +27,8 @@ import {
  * @param QueryBuilder
  * @returns model with querybuilder for extends
  * */
-export abstract class BaseModel implements IDatabase {
-  abstract tableName: string = "";
+abstract class BaseModel implements IDatabase {
+  protected tableName: string = "";
   protected query = "";
 
   constructor() {
@@ -290,7 +291,7 @@ export abstract class BaseModel implements IDatabase {
    * @param null
    * @returns available id
    * */
-  public async cekId() {
+  public async availableId() {
     return new Promise((resolve, reject) => {
       let data = this.generateId({ length: 6 });
       this.getAll()
@@ -299,16 +300,16 @@ export abstract class BaseModel implements IDatabase {
         .then((res: any) => {
           if (res.result == ResultType.SUCCESS) {
             if (res.result.payload.length > 0) {
-              reject(null);
+              resolve(this.generateId({ length: 6 }));
             } else {
               resolve(data);
             }
           } else {
-            reject(null);
+            resolve(this.generateId({ length: 6 }));
           }
         })
         .catch(err => {
-          reject(null);
+          resolve(this.generateId({ length: 6 }));
         });
     });
   }
@@ -322,3 +323,4 @@ export abstract class BaseModel implements IDatabase {
     console.log("DATABASE ON = ", msg);
   }
 }
+export { BaseModel };

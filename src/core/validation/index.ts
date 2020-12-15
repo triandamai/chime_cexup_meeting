@@ -3,4 +3,4 @@
  * Time     13:29
  * Author   Trian Damai
  * */
-export * from "./BaseModel";
+export * from "./ValidateRequest";

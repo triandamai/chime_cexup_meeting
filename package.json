@@ -25,6 +25,7 @@
       "@types/logger": "0.0.0",
       "@types/mysql": "^2.15.16",
       "@types/uuid": "^8.3.0",
+      "aws-sdk": "^2.810.0",
       "body-parser": "^1.19.0",
       "dotenv": "^8.2.0",
       "mysql": "^2.18.1",
