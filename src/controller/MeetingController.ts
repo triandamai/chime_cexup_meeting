@@ -3,10 +3,17 @@
  * Time     13:29
  * Author   Trian Damai
  * */
-import { Post, Get } from "../core";
+import {
+  Post,
+  Get,
+  Aws,
+  validateRequest,
+  ValidationType,
+  sendJSON200,
+  sendJSON400
+} from "../core";
 import { Request, Response } from "express";
 import { MyModel } from "../model/MyModel";
-import { Aws, validateRequest, ValidationType } from "../core";
 
 export class MeetingController {
   /**
@@ -51,14 +58,39 @@ export class MeetingController {
                 updateAt: Date.now()
               })
               .write()
-              .then(res => {})
-              .catch(err => {});
+              .then(result => {
+                sendJSON200({ res: res, payload: res, message: result });
+              })
+              .catch(err => {
+                sendJSON400({
+                  res: res,
+                  payload: null,
+                  message: err
+                });
+              });
           } else {
+            //failed attendee
+            sendJSON400({
+              res: res,
+              payload: null,
+              message: attende.$response.error
+            });
           }
         } else {
+          //failed create meeting
+          sendJSON400({
+            res: res,
+            payload: null,
+            message: meeting.$response.error
+          });
         }
       } else {
+        //cannot get id
+        sendJSON400({ res: res, payload: null, message: "failed generate id" });
       }
+    } else {
+      //failed validate
+      sendJSON400({ res: res, payload: null, message: validate.message });
     }
   }
   /**
