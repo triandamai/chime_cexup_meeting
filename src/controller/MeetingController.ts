@@ -8,12 +8,14 @@ import {
   Get,
   Aws,
   validateRequest,
-  ValidationType,
   sendJSON200,
-  sendJSON400
+  sendJSON400,
+  ResultBuilder,
+  uuid
 } from "../core";
 import { Request, Response } from "express";
-import { MyModel } from "../model/MyModel";
+import { MeetingModel } from "../model/MeetingModel";
+import { HistoryModel } from "../model/HistoryModel";
 
 export class MeetingController {
   /**
@@ -25,14 +27,16 @@ export class MeetingController {
    * */
   @Post({ path: "/create", middlewares: [] })
   public async create(req: Request, res: Response) {
-    let model = new MyModel();
+    let model = new MeetingModel();
     let aws = new Aws();
-    let validate = validateRequest(req, [
-      { field: "userId", type: ValidationType.string, required: true },
+
+    let validate = await validateRequest(req, [
+      { field: "userId", type: "string", required: true },
+      { field: "username", type: "string", required: true },
       {
         field: "description",
-        type: ValidationType.string,
-        required: true
+        type: "string",
+        required: false
       }
     ]);
     if (validate.next) {
@@ -50,16 +54,28 @@ export class MeetingController {
           if (attende) {
             model
               .insert({
+                id: uuid(),
                 meetingId: meeting.Meeting.MeetingId,
                 userId: req.body.userId,
+                externalId: id,
+                username: req.body.username,
                 description: req.body.description,
                 hostId: req.body.userId,
-                createAt: Date.now(),
-                updateAt: Date.now()
+                createdAt: Date.now(),
+                updatedAt: Date.now()
               })
-              .write()
+              .run()
               .then(result => {
-                sendJSON200({ res: res, payload: res, message: result });
+                sendJSON200({
+                  res: res,
+                  payload: {
+                    meeting: "",
+                    //meeting,
+                    attendee: "", //attende
+                    sql: result
+                  },
+                  message: result
+                });
               })
               .catch(err => {
                 sendJSON400({
@@ -73,7 +89,7 @@ export class MeetingController {
             sendJSON400({
               res: res,
               payload: null,
-              message: attende.$response.error
+              message: "atendee failed " + attende.$response.error
             });
           }
         } else {
@@ -81,7 +97,7 @@ export class MeetingController {
           sendJSON400({
             res: res,
             payload: null,
-            message: meeting.$response.error
+            message: "failed meeting" + meeting.$response.error
           });
         }
       } else {
@@ -101,7 +117,42 @@ export class MeetingController {
    * @returns crateing Meeting with attende for joinning video conf
    * */
   @Post({ path: "/join" })
-  public join(req: Request, res: Response) {
-    res.send("hoi");
+  public async join(req: Request, res: Response) {
+    let meetingmodel = new MeetingModel();
+    let historymodel = new HistoryModel();
+    let aws = new Aws();
+    let validate = await validateRequest(req, [
+      { field: "userId", type: "string", required: true }
+    ]);
+    if (validate.next) {
+      meetingmodel
+        .get(["meetingId", "hostId"])
+        .where({ column: "meetingId", value: req.body.meetingId })
+        .run()
+        .then(async result => {
+          let meeting = await aws.joinMeeting({ asociatedId: "", hostId: "" });
+          if (meeting) {
+            let attende = await aws.attendeeMeeting({
+              meetingId: meeting.Meeting.MeetingId,
+              externalUserId: ""
+            });
+            if (attende) {
+              //success
+              historymodel
+                .insert({ meetingId: meeting.Meeting.MeetingId })
+                .run()
+                .then(results => {})
+                .catch(error => {});
+            } else {
+              //failed attende
+            }
+          } else {
+            //failed get meeting
+          }
+        })
+        .catch(error => {});
+    } else {
+      sendJSON400({ res: res, payload: null, message: validate.message });
+    }
   }
 }

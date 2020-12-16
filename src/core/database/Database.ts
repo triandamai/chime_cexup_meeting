@@ -14,8 +14,9 @@ interface IDatabase {
 class Database {
   private db: Connection;
   private Idb: IDatabase;
-  constructor() {
+  constructor(idb: IDatabase) {
     this.connect();
+    this.Idb = idb;
   }
   public connect() {
     let config = {
@@ -39,7 +40,11 @@ class Database {
   }
 }
 
-const database = new Database();
+const database = new Database({
+  log(msg) {
+    //   console.log("Database ", msg);
+  }
+});
 
 const connection = database.getConnection();
 

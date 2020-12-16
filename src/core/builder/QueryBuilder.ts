@@ -3,7 +3,7 @@
  * Time     09:00
  * Author   Trian Damai
  * */
-
+import { v4 as uuid } from "uuid";
 interface ObjectDescriptor {
   [key: string]: any;
 }
@@ -21,6 +21,10 @@ interface ResultBuilder {
   payload: any;
   error: any;
   fields: any;
+}
+interface QueryResult {
+  success: boolean;
+  payload: any;
 }
 enum builder {
   INSERT = "INSERT INTO",
@@ -151,10 +155,12 @@ export {
   qupdate,
   qwhere,
   qjoin,
+  uuid,
   ObjectDescriptor,
   ResultType,
   ResultBuilder,
   Where,
   WhereType,
-  JoinType
+  JoinType,
+  QueryResult
 };

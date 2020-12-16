@@ -4,8 +4,6 @@
  * Author   Trian Damai
  * */
 
-import { connection, database, IDatabase } from "..";
-import { Request } from "express";
 import {
   ResultBuilder,
   ResultType,
@@ -17,7 +15,11 @@ import {
   qinsert,
   qupdate,
   qjoin,
-  qwhere
+  qwhere,
+  QueryResult,
+  connection,
+  database,
+  IDatabase
 } from "..";
 
 /**
@@ -28,7 +30,7 @@ import {
  * @returns model with querybuilder for extends
  * */
 abstract class BaseModel implements IDatabase {
-  protected tableName: string = "";
+  public abstract tableName: string = "";
   protected query = "";
 
   constructor() {
@@ -191,83 +193,19 @@ abstract class BaseModel implements IDatabase {
    * ex:
    *
    * */
-  public async write() {
-    return new Promise((resolve, reject) => {
-      connection.query(this.query, (err, results, fields) => {
-        if (err) {
-          reject(
-            this.result({
-              res: ResultType.ERROR,
-              data: null,
-              err: err,
-              field: null //fields
-            })
-          );
-        } else {
-          resolve(
-            this.result({
-              res: ResultType.SUCCESS,
-              data: results,
-              err: err,
-              field: null //fields
-            })
-          );
-        }
-      });
-      this.query = "";
-    });
-  }
+  public async run(): Promise<QueryResult> {
+    let payload: QueryResult;
 
-  /**
-   * executing find query
-   *
-   * @param null
-   * @returns async as result execution
-   * ex:
-   *
-   * */
-  public async find() {
-    return new Promise((resolve, reject) => {
-      connection.query(this.query, (err, results, fields) => {
-        if (err) {
-          reject(
-            this.result({
-              res: ResultType.ERROR,
-              data: null,
-              err: err,
-              field: null //fields
-            })
-          );
-        } else {
-          resolve(
-            this.result({
-              res: ResultType.SUCCESS,
-              data: results,
-              err: err,
-              field: null //fields
-            })
-          );
-        }
-      });
+    connection.query(this.query, (err, results, fields) => {
+      if (err) {
+        payload = { success: false, payload: err };
+      } else {
+        payload = { success: true, payload: results };
+      }
       this.query = "";
     });
-  }
-  /**
-   * Result from execute query
-   *
-   */
-  private result(data: {
-    res: ResultType;
-    data: any;
-    err: any;
-    field: any;
-  }): ResultBuilder {
-    return {
-      result: data.res,
-      payload: data,
-      error: data.err,
-      fields: data.field
-    };
+
+    return payload;
   }
 
   /**
@@ -295,8 +233,8 @@ abstract class BaseModel implements IDatabase {
     return new Promise((resolve, reject) => {
       let data = this.generateId({ length: 6 });
       this.getAll()
-        .where({ column: "asociatedId", value: data })
-        .find()
+        .where({ column: "externalId", value: data })
+        .run()
         .then((res: any) => {
           if (res.result == ResultType.SUCCESS) {
             if (res.result.payload.length > 0) {

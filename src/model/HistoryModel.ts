@@ -5,7 +5,8 @@
  * */
 import { Model, BaseModel } from "../core";
 
-@Model({ tableName: "meeting" })
-class MyModel extends BaseModel {}
+class HistoryModel extends BaseModel {
+  tableName = "history";
+}
 
-export { MyModel };
+export { HistoryModel };
