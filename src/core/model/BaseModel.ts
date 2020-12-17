@@ -21,6 +21,8 @@ import {
   database,
   IDatabase
 } from "..";
+import {} from "mysql";
+import { resolve } from "url";
 
 /**
  * class base models
@@ -31,7 +33,8 @@ import {
  * */
 abstract class BaseModel implements IDatabase {
   public abstract tableName: string = "";
-  protected query = "";
+  protected query: string = "";
+  protected isWriteData: boolean;
 
   constructor() {
     database.connect();
@@ -42,6 +45,7 @@ abstract class BaseModel implements IDatabase {
    * @returns results of all data from database
    * */
   public getAll(): BaseModel {
+    this.isWriteData = false;
     this.query += qgetall({ tableName: this.tableName });
     return this;
   }
@@ -54,6 +58,7 @@ abstract class BaseModel implements IDatabase {
    *
    * */
   public get(data: Array<string>): BaseModel {
+    this.isWriteData = false;
     this.query += qget({ tableName: this.tableName, data: data });
     return this;
   }
@@ -66,6 +71,7 @@ abstract class BaseModel implements IDatabase {
    *
    * */
   public insert(data: any): BaseModel {
+    this.isWriteData = true;
     this.query += qinsert({ table: this.tableName, data: data });
     return this;
   }
@@ -78,6 +84,7 @@ abstract class BaseModel implements IDatabase {
    *
    * */
   public update(data: any): BaseModel {
+    this.isWriteData = true;
     this.query += qupdate({ table: this.tableName, data: data });
     return this;
   }
@@ -91,7 +98,7 @@ abstract class BaseModel implements IDatabase {
     this.query += qwhere({
       data: {
         column: data.column,
-        value: data.value
+        value: typeof data.value == "string" ? `${data.value}` : data.value
       },
       type: WhereType.WHERE
     });
@@ -195,17 +202,33 @@ abstract class BaseModel implements IDatabase {
    * */
   public async run(): Promise<QueryResult> {
     let payload: QueryResult;
+    return new Promise<QueryResult>((resolve, reject) => {
+      connection.query(this.query, (err, results, fields) => {
+        console.log("executing run ", results);
+        console.log("query ", this.query);
+        if (err) {
+          resolve(
+            (payload = {
+              success: false,
+              data: null,
+              dataCount: 0,
+              message: err.sqlMessage + "in " + err.sql
+            })
+          );
+        } else {
+          resolve(
+            (payload = {
+              success: true,
+              data: results,
+              dataCount: results.length,
+              message: results
+            })
+          );
+        }
 
-    connection.query(this.query, (err, results, fields) => {
-      if (err) {
-        payload = { success: false, payload: err };
-      } else {
-        payload = { success: true, payload: results };
-      }
-      this.query = "";
+        this.query = "";
+      });
     });
-
-    return payload;
   }
 
   /**

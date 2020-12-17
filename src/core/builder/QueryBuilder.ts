@@ -9,7 +9,7 @@ interface ObjectDescriptor {
 }
 
 interface Where {
-  column: any;
+  column: string;
   value: any;
 }
 interface RequestQuery {
@@ -24,7 +24,11 @@ interface ResultBuilder {
 }
 interface QueryResult {
   success: boolean;
-  payload: any;
+  data?: any;
+  dataCount?: number;
+  affectedRows?: number;
+  insertId?: number;
+  message?: string;
 }
 enum builder {
   INSERT = "INSERT INTO",
@@ -124,7 +128,9 @@ const qupdate = (data: RequestQuery): string => {
  * */
 const qwhere = (data: { data: Where; type: WhereType }): string => {
   let val =
-    typeof data.data.value == "string" ? `${data.data.value}` : data.data.value;
+    typeof data.data.value == "string"
+      ? data.data.value.toString()
+      : data.data.value;
   let type =
     data.type == WhereType.WHERE
       ? ""
@@ -132,7 +138,7 @@ const qwhere = (data: { data: Where; type: WhereType }): string => {
       ? trailing.OR
       : trailing.AND;
 
-  return `${type} ${builder.WHERE} ${data.data.column} ${builder.EQUAL} ${val}`;
+  return `${type} ${builder.WHERE} ${data.data.column}${builder.EQUAL}'${val}'`;
 };
 
 /**

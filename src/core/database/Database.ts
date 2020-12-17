@@ -19,12 +19,12 @@ class Database {
     this.Idb = idb;
   }
   public connect() {
-    let config = {
+    this.db = createConnection({
       host: process.env.DB_HOST,
       user: process.env.DB_USER,
-      database: process.env.DB_NAME
-    };
-    this.db = createConnection(config);
+      database: process.env.DB_NAME,
+      password: process.env.DB_PASSWORD
+    });
     this.db.on("connect", err => {
       this.Idb.log(err);
     });

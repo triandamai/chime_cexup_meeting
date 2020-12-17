@@ -19,6 +19,55 @@ interface validateField {
   required?: boolean;
 }
 
+function validateRoute(
+  req: Request,
+  data: Array<validateField>
+): validationResult {
+  let request = req.body;
+  let messages: Array<string> = [];
+
+  if (typeof request != "undefined") {
+    data.map((item, index) => {
+      const data: any = request[item.field] ? request[item.field] : null;
+      if (item.required) {
+        if (data) {
+          if (typeof data !== item.type) {
+            //required but type did not match
+            messages.push(
+              `${item.field} expected as ${item.type} but got ${typeof request[
+                item.field
+              ]}`
+            );
+          }
+        } else {
+          //required but null
+          messages.push(
+            `${item.field} is required but got ${request[item.field]}`
+          );
+        }
+      } else {
+        if (data) {
+          if (typeof data !== item.type) {
+            //not required but data exist wrong type
+            messages.push(
+              `${item.field} expected as ${item.type} but got ${typeof request[
+                item.field
+              ]}`
+            );
+          }
+        }
+      }
+    });
+  } else {
+    messages.push(`body of null ${request}`);
+  }
+
+  if (messages.length > 0) {
+    return { next: false, message: messages };
+  } else {
+    return { next: true, message: null };
+  }
+}
 async function validateRequest(
   req: Request,
   data: Array<validateField>
@@ -106,4 +155,4 @@ function validateGet(req: Request, data: Array<validateField>) {
   }
 }
 
-export { validateRequest, validateGet, TypeData };
+export { validateRequest, validateGet, validateRoute, TypeData };

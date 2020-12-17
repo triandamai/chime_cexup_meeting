@@ -5,12 +5,10 @@
  * */
 import {
   Post,
-  Get,
   Aws,
   validateRequest,
   sendJSON200,
   sendJSON400,
-  ResultBuilder,
   uuid
 } from "../core";
 import { Request, Response } from "express";
@@ -27,10 +25,12 @@ export class MeetingController {
    * */
   @Post({ path: "/create", middlewares: [] })
   public async create(req: Request, res: Response) {
-    let model = new MeetingModel();
-    let aws = new Aws();
+    //init class
+    const model = new MeetingModel();
+    const aws = new Aws();
 
-    let validate = await validateRequest(req, [
+    //validate request
+    const { next, message } = await validateRequest(req, [
       { field: "userId", type: "string", required: true },
       { field: "username", type: "string", required: true },
       {
@@ -39,74 +39,85 @@ export class MeetingController {
         required: false
       }
     ]);
-    if (validate.next) {
-      let id = await model.availableId();
-      if (id) {
-        let meeting = await aws.createMeeting({
-          asociatedId: id,
-          hostId: req.body.userId
+    //validation passed
+    if (next) {
+      //create id
+      const availableId = await model.availableId();
+      //create meeting
+      const createMeeting = await aws.createMeeting({
+        asociatedId: availableId,
+        hostId: req.body.userId
+      });
+      //fail create meeting
+      if (!createMeeting.Meeting)
+        return sendJSON400({
+          res: res,
+          payload: null,
+          message: "Meeting failed" + createMeeting.$response.error
         });
-        if (meeting) {
-          let attende = await aws.attendeeMeeting({
-            externalUserId: req.body.userId,
-            meetingId: meeting.Meeting.MeetingId
-          });
-          if (attende) {
-            model
-              .insert({
-                id: uuid(),
-                meetingId: meeting.Meeting.MeetingId,
-                userId: req.body.userId,
-                externalId: id,
-                username: req.body.username,
-                description: req.body.description,
-                hostId: req.body.userId,
-                createdAt: Date.now(),
-                updatedAt: Date.now()
-              })
-              .run()
-              .then(result => {
-                sendJSON200({
-                  res: res,
-                  payload: {
-                    meeting: "",
-                    //meeting,
-                    attendee: "", //attende
-                    sql: result
-                  },
-                  message: result
-                });
-              })
-              .catch(err => {
-                sendJSON400({
-                  res: res,
-                  payload: null,
-                  message: err
-                });
-              });
-          } else {
-            //failed attendee
-            sendJSON400({
-              res: res,
-              payload: null,
-              message: "atendee failed " + attende.$response.error
-            });
-          }
-        } else {
-          //failed create meeting
-          sendJSON400({
-            res: res,
-            payload: null,
-            message: "failed meeting" + meeting.$response.error
-          });
-        }
+      //create attendee
+      const attendeeMeeting = await aws.attendeeMeeting({
+        externalUserId: req.body.userId,
+        meetingId: createMeeting.Meeting.MeetingId
+      });
+      //fail attend
+      if (!attendeeMeeting.Attendee)
+        return sendJSON400({
+          res: res,
+          payload: null,
+          message: "Meeting failed" + attendeeMeeting.$response.error
+        });
+      //insert meeting and attend
+      const { success, data, message } = await model
+        .insert({
+          id: uuid(),
+          meetingId: createMeeting.Meeting.MeetingId,
+          userId: req.body.userId,
+          externalId: availableId,
+          username: req.body.username,
+          description: req.body.description,
+          hostId: req.body.userId,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        })
+        .run();
+
+      //success
+      if (success) {
+        return sendJSON200({
+          res: res,
+          payload: {
+            meeting: createMeeting,
+            attendee: attendeeMeeting,
+            user: {
+              meetingId: createMeeting.Meeting.MeetingId,
+              userId: req.body.userId,
+              externalId: availableId,
+              username: req.body.username,
+              description: req.body.description,
+              hostId: req.body.userId,
+              createdAt: Date.now(),
+              updatedAt: Date.now()
+            },
+            sql: data
+          },
+          message: message
+        });
+        //fail
       } else {
-        //cannot get id
-        sendJSON400({ res: res, payload: null, message: "failed generate id" });
+        return sendJSON400({
+          res: res,
+          payload: null,
+          message: "failed insert"
+        });
       }
     } else {
-      //failed validate
-      sendJSON400({ res: res, payload: null, message: validate.message });
+      //validation of request didn't match
+      return sendJSON400({
+        res: res,
+        payload: null,
+        message: message
+      });
     }
   }
   /**
@@ -118,41 +129,80 @@ export class MeetingController {
    * */
   @Post({ path: "/join" })
   public async join(req: Request, res: Response) {
-    let meetingmodel = new MeetingModel();
-    let historymodel = new HistoryModel();
-    let aws = new Aws();
-    let validate = await validateRequest(req, [
-      { field: "userId", type: "string", required: true }
+    //init class
+    const meetingmodel = new MeetingModel();
+    const historymodel = new HistoryModel();
+    const aws = new Aws();
+    //validation request body
+    const { message, next } = await validateRequest(req, [
+      { field: "userId", type: "string", required: true },
+      { field: "meetingId", type: "string", required: true },
+      { field: "username", type: "string", required: true }
     ]);
-    if (validate.next) {
-      meetingmodel
-        .get(["meetingId", "hostId"])
-        .where({ column: "meetingId", value: req.body.meetingId })
-        .run()
-        .then(async result => {
-          let meeting = await aws.joinMeeting({ asociatedId: "", hostId: "" });
-          if (meeting) {
-            let attende = await aws.attendeeMeeting({
-              meetingId: meeting.Meeting.MeetingId,
-              externalUserId: ""
-            });
-            if (attende) {
-              //success
-              historymodel
-                .insert({ meetingId: meeting.Meeting.MeetingId })
-                .run()
-                .then(results => {})
-                .catch(error => {});
-            } else {
-              //failed attende
-            }
-          } else {
-            //failed get meeting
-          }
+    //validation passed
+    if (next) {
+      //getdata meeting
+      const { success, data } = await meetingmodel
+        .getAll()
+        .where({ column: "externalId", value: req.body.meetingId })
+        .run();
+      //meeting doesnot exist
+      if (!success)
+        return sendJSON400({
+          res: res,
+          payload: null,
+          message: "Not found"
+        });
+      const idmeeting = data[0].meetingId;
+      const id = data[0].id;
+      const host = data[0].hostId;
+
+      const { Meeting } = await aws.joinMeeting({
+        asociatedId: idmeeting,
+        hostId: host
+      });
+      if (!Meeting)
+        return sendJSON400({
+          res: res,
+          payload: null,
+          message: "failed join meeting is not foun or finish "
+        });
+      const { Attendee } = await aws.attendeeMeeting({
+        externalUserId: req.body.userId,
+        meetingId: Meeting.MeetingId
+      });
+
+      if (!Attendee)
+        return sendJSON400({
+          res: res,
+          payload: null,
+          message: "failed atendee"
+        });
+      const inserthistory = await historymodel
+        .insert({
+          meetingId: id,
+          userId: req.body.userId,
+          username: req.body.username,
+          joinAt: Date.now()
         })
-        .catch(error => {});
+        .run();
+      if (!inserthistory.success)
+        return sendJSON400({
+          res: res,
+          payload: null,
+          message: inserthistory.message
+        });
+      return sendJSON200({
+        res: res,
+        payload: {
+          meetingId: idmeeting,
+          meeting: "",
+          attende: ""
+        },
+        message: "Success"
+      });
     } else {
-      sendJSON400({ res: res, payload: null, message: validate.message });
+      sendJSON400({ res: res, payload: null, message: message });
     }
   }
 }

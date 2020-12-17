@@ -3,7 +3,8 @@
  * Time     13:29
  * Author   Trian Damai
  * */
-import { Router } from "express";
+import { Router, Request, Response } from "express";
+import { validateRoute, sendJSON400 } from "..";
 
 export const appRouter = Router();
 
@@ -21,7 +22,7 @@ interface IOptions {
 
 function Post(options: IOptions) {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    (appRouter as any)[method.post](options.path, target[propertyKey]);
+    (appRouter as any)[method.get](options.path, descriptor.value);
   };
 }
 function Get(options: IOptions) {
