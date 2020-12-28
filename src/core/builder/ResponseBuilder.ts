@@ -28,7 +28,7 @@ function sendJSON400(data: data) {
 }
 function sendJSON404(data: data) {
   data.res
-    .status(400)
+    .status(404)
     .contentType("application/json")
     .send({ data: data.payload, message: data.message })
     .end();

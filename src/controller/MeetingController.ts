@@ -8,7 +8,7 @@ import {
   Aws,
   validateRequest,
   sendJSON200,
-  sendJSON400,
+  sendJSON404,
   uuid
 } from "../core";
 import { Request, Response } from "express";
@@ -50,7 +50,7 @@ export class MeetingController {
       });
       //fail create meeting
       if (!createMeeting.Meeting)
-        return sendJSON400({
+        return sendJSON404({
           res: res,
           payload: null,
           message: "Meeting failed" + createMeeting.$response.error
@@ -62,7 +62,7 @@ export class MeetingController {
       });
       //fail attend
       if (!attendeeMeeting.Attendee)
-        return sendJSON400({
+        return sendJSON404({
           res: res,
           payload: null,
           message: "Meeting failed" + attendeeMeeting.$response.error
@@ -105,15 +105,15 @@ export class MeetingController {
         });
         //fail
       } else {
-        return sendJSON400({
+        return sendJSON404({
           res: res,
           payload: null,
-          message: "failed insert"
+          message: "failed insert" + message
         });
       }
     } else {
       //validation of request didn't match
-      return sendJSON400({
+      return sendJSON404({
         res: res,
         payload: null,
         message: message
@@ -148,7 +148,13 @@ export class MeetingController {
         .run();
       //meeting doesnot exist
       if (!success)
-        return sendJSON400({
+        return sendJSON404({
+          res: res,
+          payload: null,
+          message: "Not found"
+        });
+      if (!data[0])
+        return sendJSON404({
           res: res,
           payload: null,
           message: "Not found"
@@ -157,52 +163,71 @@ export class MeetingController {
       const id = data[0].id;
       const host = data[0].hostId;
 
-      const { Meeting } = await aws.joinMeeting({
-        asociatedId: idmeeting,
-        hostId: host
-      });
-      if (!Meeting)
-        return sendJSON400({
-          res: res,
-          payload: null,
-          message: "failed join meeting is not foun or finish "
-        });
-      const { Attendee } = await aws.attendeeMeeting({
-        externalUserId: req.body.userId,
-        meetingId: Meeting.MeetingId
-      });
-
-      if (!Attendee)
-        return sendJSON400({
-          res: res,
-          payload: null,
-          message: "failed atendee"
-        });
-      const inserthistory = await historymodel
-        .insert({
-          meetingId: id,
-          userId: req.body.userId,
-          username: req.body.username,
-          joinAt: Date.now()
+      aws
+        .joinMeeting({
+          asociatedId: idmeeting,
+          hostId: host
         })
-        .run();
-      if (!inserthistory.success)
-        return sendJSON400({
-          res: res,
-          payload: null,
-          message: inserthistory.message
+        .then(({ Meeting }) => {
+          aws
+            .attendeeMeeting({
+              externalUserId: req.body.userId,
+              meetingId: Meeting.MeetingId
+            })
+            .then(async ({ Attendee }) => {
+              const inserthistory = await historymodel
+                .insert({
+                  meetingId: id,
+                  userId: req.body.userId,
+                  username: req.body.username,
+                  joinAt: Date.now()
+                })
+                .run();
+              if (!inserthistory.success)
+                return sendJSON404({
+                  res: res,
+                  payload: null,
+                  message: inserthistory.message
+                });
+              return sendJSON200({
+                res: res,
+                payload: {
+                  meeting: Meeting,
+                  attende: Attendee,
+                  user: {
+                    meetingId: Meeting.MeetingId,
+                    userId: req.body.userId,
+                    externalId: req.body.meetingId,
+                    username: req.body.username,
+                    description: req.body.description,
+                    hostId: req.body.userId,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                  }
+                },
+                message: "Success"
+              });
+            })
+            .catch(err => {
+              return sendJSON404({
+                res: res,
+                payload: null,
+                message: "failed atendee" + err
+              });
+            });
+        })
+        .catch(err => {
+          return sendJSON404({
+            res: res,
+            payload: null,
+            message: "failed join meeting is not foun or finish "
+          });
         });
-      return sendJSON200({
-        res: res,
-        payload: {
-          meetingId: idmeeting,
-          meeting: "",
-          attende: ""
-        },
-        message: "Success"
-      });
     } else {
-      sendJSON400({ res: res, payload: null, message: message });
+      sendJSON404({ res: res, payload: null, message: message });
     }
   }
+
+  @Post({ path: "/end", middlewares: [] })
+  public end(req: Request, res: Response) {}
 }

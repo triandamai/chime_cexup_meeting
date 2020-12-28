@@ -22,7 +22,7 @@ interface IOptions {
 
 function Post(options: IOptions) {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    (appRouter as any)[method.get](options.path, descriptor.value);
+    (appRouter as any)[method.post](options.path, target[propertyKey]);
   };
 }
 function Get(options: IOptions) {
