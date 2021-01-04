@@ -16,8 +16,8 @@ enum method {
 }
 interface IOptions {
   path: string;
-  middlewares?: any[];
-  validations?: any[];
+  middlewares?: Function;
+  validations?: any;
 }
 
 function Post(options: IOptions) {

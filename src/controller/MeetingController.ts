@@ -21,9 +21,12 @@ export class MeetingController {
    * @param iduser
    * @param token
    * @param username
-   * @returns joining Meeting with attende for joinning video conf
+   * @returns joining Meeting with attende for joining video conf
    * */
-  @Post({ path: "/create", middlewares: [] })
+  @Post({
+    path: "/create",
+    middlewares: null
+  })
   public async create(req: Request, res: Response) {
     //init class
     const model = new MeetingModel();
@@ -228,6 +231,6 @@ export class MeetingController {
     }
   }
 
-  @Post({ path: "/end", middlewares: [] })
+  @Post({ path: "/end", middlewares: null })
   public end(req: Request, res: Response) {}
 }

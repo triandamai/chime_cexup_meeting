@@ -202,10 +202,11 @@ abstract class BaseModel implements IDatabase {
    * */
   public async run(): Promise<QueryResult> {
     let payload: QueryResult;
+    this.log("executing run");
     return new Promise<QueryResult>((resolve, reject) => {
+      this.log(`QUERY => ` + this.query);
       connection.query(this.query, (err, results, fields) => {
-        console.log("executing run ", results);
-        console.log("query ", this.query);
+        this.log("results => " + results + " error => " + err);
         if (err) {
           resolve(
             (payload = {
@@ -244,6 +245,7 @@ abstract class BaseModel implements IDatabase {
     for (var i = 0; i < data.length; i++) {
       result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
+    this.log(`Generate Id => ${result}`);
     return result;
   }
 
@@ -259,6 +261,7 @@ abstract class BaseModel implements IDatabase {
         .where({ column: "externalId", value: data })
         .run()
         .then((res: any) => {
+          this.log("Generate id  => " + res);
           if (res.result == ResultType.SUCCESS) {
             if (res.result.payload.length > 0) {
               resolve(this.generateId({ length: 6 }));
@@ -270,6 +273,7 @@ abstract class BaseModel implements IDatabase {
           }
         })
         .catch(err => {
+          this.log("Generate id error => " + err);
           resolve(this.generateId({ length: 6 }));
         });
     });
@@ -281,7 +285,9 @@ abstract class BaseModel implements IDatabase {
    *
    */
   log(msg: any) {
-    console.log("DATABASE ON = ", msg);
+    process.env.MODE == "dev"
+      ? console.log(`[Model->]${this.tableName}`, msg)
+      : console.log(`[APP]->PRODUCTION MODE`);
   }
 }
 export { BaseModel };

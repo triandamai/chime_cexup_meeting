@@ -11,6 +11,10 @@ import "./src/controller";
 import * as cors from "cors";
 import { allowedOrigins } from "./src/origin";
 
+import * as dotenv from "dotenv";
+dotenv.config();
+const port = process.env.PORT || 4000;
+
 class App {
   app: express.Application = express();
   constructor() {
@@ -29,8 +33,20 @@ class App {
     this.app.use(cors(corsOptions));
     this.app.use(bodyparser.json({ limit: "50mb" }));
     this.app.use(bodyparser.urlencoded({ extended: true, limit: "50mb" }));
+    // this.app.use();
     this.app.use(appRouter);
+  }
+  public run() {
+    this.app.listen(port, () => {
+      this.log(`running at http://localhost:${port}`);
+    });
+    this.app.on("error", () => {
+      this.log(`run err`);
+    });
+  }
+  public log(str) {
+    console.log(`[DEV]`, str);
   }
 }
 
-export default new App().app;
+export default new App();

@@ -124,7 +124,7 @@ const qupdate = (data: RequestQuery): string => {
  * get where condition
  * @param data {column,value}
  * @param type
- * @returns query WHERE  columnname = value OR columnname = value AND columnname = value
+ * @return query WHERE  columnname = value OR columnname = value AND columnname = value
  * */
 const qwhere = (data: { data: Where; type: WhereType }): string => {
   let val =
