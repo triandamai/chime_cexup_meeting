@@ -22,7 +22,8 @@ import {
   IDatabase
 } from "..";
 import {} from "mysql";
-import { resolve } from "url";
+import * as dotenv from "dotenv";
+dotenv.config();
 
 /**
  * class base models

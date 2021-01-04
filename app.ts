@@ -45,7 +45,7 @@ class App {
     });
   }
   public log(str) {
-    console.log(`[DEV]`, str);
+    process.env.MODE == "dev" ? console.log(`[DEV]`, str) : console.log("");
   }
 }
 

@@ -233,4 +233,8 @@ export class MeetingController {
 
   @Post({ path: "/end", middlewares: null })
   public end(req: Request, res: Response) {}
+  @Post({ path: "/tes" })
+  public testIOT(req: Request, res: Response) {
+    sendJSON200({ message: "hai", payload: req.body, res: res });
+  }
 }
